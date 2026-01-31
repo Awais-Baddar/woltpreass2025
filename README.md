@@ -1,7 +1,7 @@
 ## Screenshots
 
 ### Main UI (Light mode)
-![Main UI Light](screenshots/image.png)
+![Main UI Light](screenshots/image.PNG)
 
 
 
