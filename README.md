@@ -1,73 +1,103 @@
-# React + TypeScript + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-Currently, two official plugins are available:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-## React Compiler
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+# Delivery Order Price Calculator (DOPC)
 
-## Expanding the ESLint configuration
+A React + TypeScript web app that calculates delivery pricing for a venue based on:
+- **Cart value**
+- **User location (lat/lon)**
+- Venue data fetched from the **Home Assignment API** (static + dynamic endpoints)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+The UI validates inputs, fetches venue data, calculates distance + fees, and renders a full price breakdown with test-friendly attributes (`data-test-id`, `data-raw-value`).
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Features
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+- ✅ React + TypeScript implementation
+- ✅ Venue data fetched from Home Assignment API
+- ✅ Input validation with inline field errors
+- ✅ “Get location” using browser geolocation
+- ✅ Delivery fee calculation using venue distance ranges
+- ✅ Error state for non-deliverable orders (distance too long)
+- ✅ Outputs include:
+  - Cart value
+  - Small order surcharge
+  - Delivery fee
+  - Delivery distance
+  - Total price
+- ✅ Testing support:
+  - Input elements have required `data-test-id`
+  - Output values include `data-raw-value` (money in **cents**, distance in **meters**)
+- ✅ Tests written with **Vitest + Testing Library**
+- ✅ Light/Dark theme with a hero section
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+---
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Live behavior (What the app does)
+
+1. User enters:
+   - Venue slug (e.g. `home-assignment-venue-helsinki`)
+   - Cart value in EUR (e.g. `10` or `10.55`)
+   - User latitude / longitude
+
+2. When **Calculate delivery price** is clicked:
+   - Inputs are validated and parsed into internal numeric representation
+   - App fetches:
+     - `/static` venue endpoint for venue coordinates
+     - `/dynamic` venue endpoint for pricing specs
+   - App computes:
+     - Straight-line distance from user → venue (meters)
+     - Small order surcharge (cents)
+     - Delivery fee based on venue’s distance ranges (cents)
+     - Total price (cents)
+   - UI renders a breakdown and total
+
+3. If the delivery is not available (e.g. distance exceeds supported range), the app shows an error message.
+
+---
+
+## Pricing logic (Algorithm)
+
+### 1) Small order surcharge
+`smallOrderSurcharge = max(0, order_minimum_no_surcharge - cartValue)`
+
+### 2) Delivery distance
+Computed as straight-line (Haversine approximation):
+`distanceMeters = haversine(userLat, userLon, venueLat, venueLon)`
+
+### 3) Delivery fee
+From `/dynamic`:
+- `base_price`
+- `distance_ranges[]` objects:
+
+Each range includes:
+- `min`, `max` (meters)
+- `a` (constant cents)
+- `b` (distance multiplier)
+
+For a matching range:
+`deliveryFee = base_price + a + round(b * distanceMeters / 10)`
+
+If a range has `"max": 0`, delivery is not available for distances `>= min`.
+
+### 4) Total
+`totalPrice = cartValue + smallOrderSurcharge + deliveryFee`
+
+All monetary values are handled in **cents**.
+
+---
+
+## Tech stack
+
+- React
+- TypeScript
+- Vite
+- Vitest + Testing Library
+
+---
+
+
+
